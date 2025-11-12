@@ -2,6 +2,8 @@
 
 Use these bullet points on your resume to describe this project. Choose the ones that best match the role you're applying for.
 
+**Project Team:** Shree Bohara & Soumya
+
 ## For Software Engineer / Backend Engineer Roles
 
 ```

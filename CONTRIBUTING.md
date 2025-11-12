@@ -56,6 +56,11 @@ Thank you for your interest in contributing to this project! This document provi
 - Benchmark enhancements
 - Analysis of optimization effectiveness
 
+## Core Team
+
+- **Shree Bohara** - Co-lead Developer (Linear search optimization, GUC integration, benchmarking)
+- **Soumya** - Co-lead Developer (Prefetch optimization, benchmark scripts, documentation)
+
 ## Questions?
 
 Feel free to open an issue for questions or discussions.

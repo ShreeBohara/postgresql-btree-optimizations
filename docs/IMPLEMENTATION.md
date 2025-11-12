@@ -207,6 +207,11 @@ Potential improvements:
 4. Multi-page prefetching for long sequential scans
 5. Prefetch cancellation for early scan termination
 
+## Authors
+
+**Shree Bohara** - Linear search optimization, GUC integration, benchmarking  
+**Soumya** - Prefetch optimization, benchmark scripts, documentation
+
 ## References
 
 - PostgreSQL Documentation: https://www.postgresql.org/docs/17/

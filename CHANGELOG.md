@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.0] - 2025
 
+**Developed by:** Shree Bohara & Soumya
+
 ### Added
 - Linear search optimization for small B-tree leaf pages (≤4 items)
 - Leaf-page prefetching optimization for range scans

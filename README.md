@@ -150,7 +150,10 @@ This is a research/optimization project. Contributions, bug reports, and perform
 
 ## Authors
 
-- Implementation, benchmarking, and analysis
+- **Shree Bohara** - Linear search optimization, GUC integration, benchmarking, performance analysis
+- **Soumya** - Prefetch optimization, benchmark scripts, documentation, testing
+
+See [CONTRIBUTORS.md](CONTRIBUTORS.md) for detailed contribution breakdown.
 
 ## License
 
