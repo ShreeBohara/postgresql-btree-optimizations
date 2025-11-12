@@ -20,7 +20,7 @@ git commit -m "Initial commit: PostgreSQL B-tree optimizations"
 5. **DO NOT** initialize with README, .gitignore, or license (we already have them)
 6. Click "Create repository"
 
-## Step 3: Connect and Push
+# Step 3: Connect and Push
 
 ```bash
 git branch -M main
