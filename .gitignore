@@ -1,0 +1,46 @@
+# Build artifacts
+*.o
+*.so
+*.a
+*.lo
+*.la
+*.dylib
+*.dll
+
+# PostgreSQL build directories
+postgresql-17.4/
+*.tar.gz
+
+# Benchmark results
+benchmark_results_*/
+*.csv
+*.result
+*.error
+query_benchmark_results.txt
+query_timing.csv
+performance_comparison.csv
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Database files
+databases/
+*.pid
+*.lock
+
+# Temporary files
+*.tmp
+*.bak
+*~
+

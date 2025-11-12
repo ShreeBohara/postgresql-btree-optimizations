@@ -1,0 +1,165 @@
+
+This patch implements two B-tree micro-optimizations in PostgreSQL 17.4:
+1. Linear search optimization for small leaf pages
+2. Leaf page lookahead prefetching
+
+--- a/src/include/access/nbtree.h
++++ b/src/include/access/nbtree.h
+@@ -30,6 +30,11 @@
+ #include "utils/relcache.h"
+ #include "utils/sortsupport.h"
+ 
++/* GUC variables for B-tree optimizations */
++extern bool btree_leaf_prefetch;
++extern bool btree_binsrch_linear;  
++extern int btree_binsrch_linear_threshold;
++
+ /*
+  *	BTPageOpaqueData -- At the end of every page, we store a pointer
+  *	to both siblings in the tree.  This is used to do forward/backward
+
+--- a/src/backend/access/nbtree/nbtutils.c
++++ b/src/backend/access/nbtree/nbtutils.c
+@@ -20,6 +20,11 @@
+ #include "utils/lsyscache.h"
+ #include "utils/rel.h"
+ 
++/* GUC variables for B-tree optimizations */
++bool btree_leaf_prefetch = false;           /* default off */
++bool btree_binsrch_linear = false;          /* default off */
++int btree_binsrch_linear_threshold = 4;     /* default 4 */
++
+ /*
+  * _bt_mkscankey
+  *		Build a scan key on a tuple, and optionally the scankey's heap TID.
+
+--- a/src/backend/utils/misc/guc_tables.c
++++ b/src/backend/utils/misc/guc_tables.c
+@@ -28,6 +28,7 @@
+ #include "access/transam.h"
+ #include "access/xlog.h"
+ #include "access/xlog_internal.h"
++#include "access/nbtree.h"
+ #include "catalog/pg_authid.h"
+ #include "catalog/pg_database.h"
+ #include "catalog/pg_ts_config.h"
+@@ -2000,6 +2001,30 @@ static struct config_bool ConfigureNamesBool[] =
+ 		},
+ 		&enable_hashjoin,
+ 		true,
++		NULL, NULL, NULL
++	},
++	{
++		{"btree_leaf_prefetch", PGC_USERSET, DEVELOPER_OPTIONS,
++			gettext_noop("Enables leaf page prefetching in B-tree scans."),
++			NULL
++		},
++		&btree_leaf_prefetch,
++		false,
++		NULL, NULL, NULL
++	},
++	{
++		{"btree_binsrch_linear", PGC_USERSET, DEVELOPER_OPTIONS,
++			gettext_noop("Enables linear search for small B-tree leaf pages."),
++			NULL
++		},
++		&btree_binsrch_linear,
++		false,
+ 		NULL, NULL, NULL
+ 	},
+ 	{
+@@ -3000,6 +3025,20 @@ static struct config_int ConfigureNamesInt[] =
+ 		},
+ 		&btree_gin_compression,
+ 		0, 0, 1,
++		NULL, NULL, NULL
++	},
++	{
++		{"btree_binsrch_linear_threshold", PGC_USERSET, DEVELOPER_OPTIONS,
++			gettext_noop("Threshold for using linear search on B-tree leaf pages."),
++			NULL
++		},
++		&btree_binsrch_linear_threshold,
++		4, 1, 32,
+ 		NULL, NULL, NULL
+ 	},
+ 	{
+@@ -4000,6 +4039,7 @@ static struct config_string ConfigureNamesString[] =
+ 		},
+ 		&default_tablespace,
+ 		"",
++		NULL, NULL, NULL
+ 	},
+ 	{
+ 		{"temp_tablespaces", PGC_USERSET, CLIENT_CONN_STATEMENT,
+
+--- a/src/backend/access/nbtree/nbtsearch.c
++++ b/src/backend/access/nbtree/nbtsearch.c
+@@ -350,6 +350,30 @@ _bt_binsrch(Relation rel,
+ 	high = PageGetMaxOffsetNumber(page);
+ 	low = P_FIRSTDATAKEY(opaque);
+ 
++	/* Linear search optimization for small leaf pages */
++	if (btree_binsrch_linear && P_ISLEAF(opaque))
++	{
++		int num_items = high - low + 1;
++		
++		if (num_items >= 2 && num_items <= btree_binsrch_linear_threshold)
++		{
++			/* Perform linear search instead of binary search */
++			OffsetNumber offset;
++			
++			for (offset = low; offset <= high; offset++)
++			{
++				result = _bt_compare(rel, key, page, offset);
++				
++				if (key->nextkey)
++				{
++					if (result <= 0)
++						return offset;
++				}
++				else
++				{
++					if (result < 0)
++						return OffsetNumberPrev(offset);
++				}
++			}
++			
++			/* If we get here, all items were < scankey */
++			return high;
++		}
++	}
++	/* Continue with normal binary search if conditions not met */
++
+ 	/*
+ 	 * If there are no keys on the page, return the first available slot. Note
+ 	 * this covers two cases: the page is really empty (no keys), or it
+@@ -1960,6 +1984,25 @@ _bt_readpage(IndexScanDesc scan, ScanDirection dir, OffsetNumber offnum)
+ 	/* initialize moreLeft/moreRight appropriately for scan direction */
+ 	if (ScanDirectionIsForward(dir))
+ 	{
++		/* Leaf page prefetch optimization */
++		if (btree_leaf_prefetch && P_ISLEAF(opaque))
++		{
++			BlockNumber nextblk = InvalidBlockNumber;
++			
++			/* Determine next page based on scan direction */
++			if (ScanDirectionIsForward(dir) && so->currPos.moreRight)
++			{
++				nextblk = opaque->btpo_next;
++			}
++			else if (ScanDirectionIsBackward(dir) && so->currPos.moreLeft)
++			{
++				nextblk = opaque->btpo_prev;  
++			}
++			
++			/* Issue prefetch if we have a valid next page */
++			if (BlockNumberIsValid(nextblk))
++			{
++				PrefetchBuffer(scan->indexRelation, MAIN_FORKNUM, nextblk);
++			}
++		}
++
+ 		so->currPos.moreLeft = false;
+ 		if (so->currPos.moreRight)
+ 		{

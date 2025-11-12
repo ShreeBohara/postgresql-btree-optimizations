@@ -1,0 +1,43 @@
+PostgreSQL B-Tree Optimizations - Repository Structure
+=====================================================
+
+postgresql-btree-optimizations/
+├── README.md                    # Main project documentation
+├── LICENSE                      # MIT License
+├── .gitignore                   # Git ignore rules
+├── CHANGELOG.md                 # Version history
+├── CONTRIBUTING.md              # Contribution guidelines
+├── RESUME_BULLETS.md            # Resume bullet points
+│
+├── patches/                     # PostgreSQL patch files
+│   ├── README.md               # Patch documentation
+│   └── btree_optimizations.patch
+│
+├── benchmarks/                  # Benchmarking suite
+│   ├── benchmark_queries_linear.sh
+│   ├── benchmark_queries_prefetch.sh
+│   ├── benchmark_queries_prefetch_linear.sh
+│   ├── prepend_imdb_headers.sh
+│   ├── job_queries/            # 113 IMDB/JOB benchmark queries
+│   │   └── [113 .sql files]
+│   └── load-postgres/          # Database setup scripts
+│       ├── schema.sql
+│       ├── add_fks.sql
+│       ├── fkindexes.sql
+│       └── load_job_postgres.sh
+│
+├── docker/                      # Docker configuration
+│   └── Dockerfile
+│
+└── docs/                        # Documentation
+    ├── IMPLEMENTATION.md        # Technical implementation details
+    ├── BENCHMARKING.md          # Benchmarking guide
+    └── QUICKSTART.md           # Quick start guide
+
+Total Files:
+- 1 patch file
+- 3 benchmark scripts
+- 113 SQL query files
+- 4 database setup scripts
+- 7 documentation files
+- 1 Dockerfile
